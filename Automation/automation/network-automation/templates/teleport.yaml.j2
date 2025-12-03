@@ -1,0 +1,17 @@
+version: v3
+teleport:
+  nodename: {{ ansible_hostname }}
+  data_dir: /var/lib/teleport
+  auth_server: teleport.anphuc.site:3025
+  auth_token: 6a32d7d1baac54a9455207c8d7116f40
+  log:
+    output: stderr
+    severity: INFO
+auth_service:
+  enabled: "no"
+ssh_service:
+  enabled: "yes"
+  labels:
+    namesv: "{{ ansible_hostname }}"
+proxy_service:
+  enabled: "no"

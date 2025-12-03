@@ -1,0 +1,14 @@
+# Ignore OS Images and Binaries
+*.qcow2
+*.bin
+*.tgz
+*.iso
+
+# Ignore Editor Temp files
+*.swp
+*.swo
+*~
+
+# Ignore Secrets
+secrets.yml
+.env

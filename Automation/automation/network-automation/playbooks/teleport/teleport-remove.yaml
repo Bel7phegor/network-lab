@@ -1,0 +1,90 @@
+---
+- name: Remove Teleport agent from internal hosts
+  hosts: "{{ target_hosts }}" 
+  become: yes
+
+  tasks:
+    - name: Stop Teleport service if running
+      systemd:
+        name: teleport
+        state: stopped
+      ignore_errors: yes
+
+    - name: Disable Teleport service
+      systemd:
+        name: teleport
+        enabled: no
+      ignore_errors: yes
+
+    - name: Remove Teleport package (QUAN TRỌNG)
+      apt:
+        name: teleport
+        state: absent
+        purge: yes  # Xóa cả config files
+      ignore_errors: yes
+
+    - name: Remove Teleport systemd unit file
+      file:
+        path: /etc/systemd/system/teleport.service
+        state: absent
+      ignore_errors: yes
+
+    - name: Remove Teleport configuration
+      file:
+        path: /etc/teleport.yaml
+        state: absent
+      ignore_errors: yes
+
+    - name: Remove Teleport configuration directory
+      file:
+        path: /etc/teleport
+        state: absent
+      ignore_errors: yes
+
+    - name: Remove Teleport data directory
+      file:
+        path: /var/lib/teleport
+        state: absent
+      ignore_errors: yes
+
+    - name: Remove Teleport binaries (additional cleanup)
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /usr/local/bin/teleport
+        - /usr/bin/teleport
+        - /usr/local/bin/tsh
+        - /usr/local/bin/tctl
+      ignore_errors: yes
+
+    - name: Verify Teleport removal
+      command: which teleport
+      register: teleport_removed
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Verify package removal
+      command: dpkg -l teleport
+      register: teleport_package_removed
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Show removal result
+      debug:
+        msg: >-
+          {{ ansible_hostname }}:
+          {% if teleport_removed.rc != 0 and teleport_package_removed.rc != 0 %}
+            ✅ Teleport completely removed
+          {% else %}
+            ⚠️  Teleport partially removed - check manually
+          {% endif %}
+    - name: Deregister node from Teleport server
+      delegate_to: teleport-server
+      shell: |
+        uuid=$(tctl nodes ls --format=json | jq -r '.[] | select(.spec.hostname=="{{ ansible_hostname }}") | .metadata.name')
+        if [ -n "$uuid" ]; then
+          tctl rm node/$uuid
+        fi
+      ignore_errors: yes
+ 

@@ -1,0 +1,59 @@
+---
+- name: Backup config from switches (clean structure)
+  hosts: switches
+  gather_facts: no
+  become: false
+
+  tasks:
+
+    - name: Step 0 - Set current timestamp
+      set_fact:
+        timestamp: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+
+    - name: Step 1 - Set base backup directory
+      set_fact:
+        base_dir: "/backups/switches/{{ inventory_hostname }}"
+
+    - name: Step 2a - Set backup subdirectory name
+      set_fact:
+        backup_subdir: "{{ timestamp }}-{{ inventory_hostname }}"
+
+    - name: Step 2b.1 - Set backup directory path
+      set_fact:
+        backup_dir: "{{ base_dir }}/{{ backup_subdir }}"
+
+    - name: Step 2b.2 - Set config file path
+      set_fact:
+        config_file: "{{ backup_dir }}/run-config.txt"
+
+    - name: Step 2b.3 - Set archive file path
+      set_fact:
+        archive_file: "{{ backup_dir }}/backup-run.tar.gz"
+
+    - name: Get running config from Cisco switch
+      ios_command:
+        commands: show running-config
+      register: config_output
+
+    - name: Create backup directory
+      delegate_to: localhost
+      file:
+        path: "{{ backup_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Save running config to file
+      delegate_to: localhost
+      copy:
+        content: "{{ config_output.stdout[0] }}"
+        dest: "{{ config_file }}"
+
+    - name: Archive the run-config.txt
+      delegate_to: localhost
+      command: >
+        tar -czf {{ archive_file }} -C {{ backup_dir }} run-config.txt
+
+    - name: Show archive file location
+      delegate_to: localhost
+      debug:
+        msg: "✅ Switch '{{ inventory_hostname }}' đã backup xong tại {{ archive_file }}"

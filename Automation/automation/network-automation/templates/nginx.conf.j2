@@ -1,0 +1,32 @@
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+error_log /var/log/nginx/error.log;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+    worker_connections 768;
+}
+
+http {
+    # BEGIN ANSIBLE MANAGED BLOCK - exporter stub_status
+    server {
+        listen 8080;
+        server_name localhost;
+
+        location /nginx_status {
+            stub_status on;
+            access_log off;
+            allow 127.0.0.1;
+            allow ::1;
+            deny all;
+        }
+    }
+    # END ANSIBLE MANAGED BLOCK - exporter stub_status
+
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    include /etc/nginx/conf.d/*.conf;
+    include /etc/nginx/sites-enabled/*;
+}
+

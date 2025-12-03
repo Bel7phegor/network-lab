@@ -1,0 +1,88 @@
+---
+- name: Force Full Restore Cisco Switch Config
+  hosts: switches
+  vars:
+    backup_file: ""
+    temp_dir: "/tmp/switch_restore_{{ inventory_hostname }}"
+    cleaned_config: "{{ temp_dir }}/cleaned-config.txt"
+    scp_user: "{{ ansible_user }}"
+    scp_password: "{{ ansible_ssh_pass }}"
+    force_reload: false
+
+  tasks:
+    # Bước 1: Chuẩn bị thư mục và file
+    - name: Create temp directory
+      delegate_to: localhost
+      file:
+        path: "{{ temp_dir }}"
+        state: directory
+        mode: '0700'
+
+    - name: Extract backup archive
+      delegate_to: localhost
+      unarchive:
+        src: "{{ backup_file }}"
+        dest: "{{ temp_dir }}"
+        remote_src: yes
+
+    - name: Verify config file
+      delegate_to: localhost
+      stat:
+        path: "{{ temp_dir }}/run-config.txt"
+      register: config_stat
+      failed_when: not config_stat.stat.exists
+
+    # Bước 2: Làm sạch config file
+    - name: Clean config file
+      delegate_to: localhost
+      shell: |
+        grep -v '^!' "{{ temp_dir }}/run-config.txt" |
+        grep -v '^$' |
+        sed '/^Building configuration/d' |
+        sed '/^Current configuration/d' |
+        sed '/^ntp clock-period/d' > "{{ cleaned_config }}"
+      args:
+        executable: /bin/bash
+
+    # Bước 3: PHƯƠNG PHÁP MỚI - Sử dụng Ansible copy + IOS command
+    - name: Upload config via Ansible copy
+      cisco.ios.ios_config:
+        src: "{{ cleaned_config }}"
+        save_when: changed
+        replace: block
+        backup: no
+      register: direct_upload_result
+      ignore_errors: yes
+
+    # Fallback method nếu method chính fail
+    - name: Apply config line by line (Fallback)
+      when: direct_upload_result is failed
+      cisco.ios.ios_config:
+        lines: "{{ lookup('file', cleaned_config).split('\n') }}"
+        parents: no
+        match: none
+        replace: block
+        save_when: changed
+
+    # Bước 4: Xác nhận restore
+    - name: Verify restore
+      cisco.ios.ios_command:
+        commands:
+          - show running-config | include Last configuration
+      register: verify_result
+      changed_when: false
+
+    - name: Show restore status
+      debug:
+        msg: |
+          RESTORE STATUS:
+          - Method used: {% if direct_upload_result is failed %}Fallback{% else %}Direct{% endif %}
+          - Last config change: {{ verify_result.stdout[0] | default('Unknown') }}
+          - Config checksum: {{ lookup('file', cleaned_config) | hash('sha1') }}
+
+    # Bước 5: Dọn dẹp
+    - name: Cleanup temp files
+      delegate_to: localhost
+      file:
+        path: "{{ temp_dir }}"
+        state: absent

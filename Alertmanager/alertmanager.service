@@ -1,0 +1,18 @@
+[Unit]
+Description=Alertmanager
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=alertmanager
+Group=alertmanager
+Restart=always
+Type=simple
+WorkingDirectory=/etc/alertmanager/
+ExecStart=/usr/local/bin/alertmanager \
+--config.file=/etc/alertmanager/alertmanager.yml \
+--storage.path=/var/lib/alertmanager \
+--cluster.listen-address=0.0.0.0:9094 \
+--cluster.advertise-address=192.168.254.254:9095
+[Install]
+WantedBy=multi-user.target

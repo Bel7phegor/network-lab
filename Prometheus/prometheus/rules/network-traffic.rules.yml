@@ -1,0 +1,56 @@
+groups:
+- name: network-traffic-alerts
+  rules:
+  # Cảnh báo traffic inbound cao
+  - alert: HighInboundTraffic
+    expr: irate(ifHCInOctets{job!="", ifName!~"lo|veth.*"}[5m]) * 8 > 100000000  # >100Mbps
+    for: 5m
+    labels:
+      severity: '{{ if gt $value 150000000 }}critical{{ else }}warning{{ end }}'
+      alert_type: 'network_traffic'
+      direction: 'in'
+    annotations:
+      summary: "High inbound traffic on {{ $labels.ifName }}"
+      description: |
+        INBOUND TRAFFIC ALERT
+        Interface: {{ $labels.ifName }}
+        Current: {{ $value | humanize }} bps
+        Threshold: 100 Mbps
+
+  # Cảnh báo traffic outbound cao
+  - alert: HighOutboundTraffic
+    expr: irate(ifHCOutOctets{job!="", ifName!~"lo|veth.*"}[5m]) * 8 > 50000000  # >50Mbps
+    for: 5m
+    labels:
+      severity: '{{ if gt $value 75000000 }}critical{{ else }}warning{{ end }}'
+      alert_type: 'network_traffic'
+      direction: 'out'
+    annotations:
+      summary: "High outbound traffic on {{ $labels.ifName }}"
+      description: |
+        OUTBOUND TRAFFIC ALERT
+        Interface: {{ $labels.ifName }}
+        Current: {{ $value | humanize }} bps
+        Threshold: 50 Mbps
+
+  # Cảnh báo traffic bất thường
+  - alert: NetworkTrafficAnomaly
+    expr: |
+      (
+        irate(ifHCInOctets{job!="", ifName!~"lo|veth.*"}[5m]) * 8
+        >
+        avg(irate(ifHCInOctets{job!="", ifName!~"lo|veth.*"}[5m] offset 7d)) by (ifName) * 8 * 3
+      )
+      or
+      (
+        irate(ifHCOutOctets{job!="", ifName!~"lo|veth.*"}[5m]) * 8
+        >
+        avg(irate(ifHCOutOctets{job!="", ifName!~"lo|veth.*"}[5m] offset 7d)) by (ifName) * 8 * 3
+      )
+    for: 10m
+    labels:
+      severity: 'critical'
+      alert_type: 'network_anomaly'
+    annotations:
+      summary: "Abnormal traffic on {{ $labels.ifName }}"
+      description: "Traffic anomaly detected on interface {{ $labels.ifName }}"

@@ -1,0 +1,60 @@
+---
+- name: Remove Nginx from selected hosts
+  hosts: "{{ target_hosts }}"
+  become: yes
+
+  tasks:
+    - name: Stop Nginx service
+      systemd:
+        name: nginx
+        state: stopped
+      ignore_errors: yes
+
+    - name: Disable Nginx service
+      systemd:
+        name: nginx
+        enabled: no
+      ignore_errors: yes
+
+    - name: Remove Nginx package
+      apt:
+        name: nginx
+        state: absent
+        purge: yes  # Xóa cả config files
+        autoremove: yes  # Xóa dependencies không dùng
+      register: nginx_remove
+
+    - name: Remove Nginx config directories
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/nginx
+        - /var/www/html
+        - /var/log/nginx
+      ignore_errors: yes
+
+    - name: Remove Nginx log files
+      shell: |
+        rm -rf /var/log/nginx*
+      ignore_errors: yes
+
+    - name: Check if Nginx is completely removed
+      command: dpkg -l nginx
+      register: nginx_check
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Display removal summary
+      debug:
+        msg: 
+          - "🗑️ NGINX REMOVAL SUMMARY for {{ ansible_hostname }}"
+          - "============================================="
+          - "📦 Nginx removed: {{ nginx_remove.changed }}"
+          - "🔍 Still installed: {{ nginx_check.rc == 0 }}"
+          - "✅ Cleanup completed: {{ nginx_check.rc != 0 }}"
+
+- import_playbook: nginx-exporter-remove.yaml
+
+
+

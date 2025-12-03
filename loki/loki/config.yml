@@ -1,0 +1,60 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  log_level: debug
+  grpc_server_max_concurrent_streams: 1000
+
+common:
+  instance_addr: 192.168.254.254  # Change from 127.0.0.1 to your server's IP
+  path_prefix: /var/lib/loki       # Change from /tmp to persistent storage
+  storage:
+    filesystem:
+      chunks_directory: /var/lib/loki/chunks
+      rules_directory: /var/lib/loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: memberlist
+
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+
+limits_config:
+  #  metric_aggregation_enabled: true
+  max_line_size: 1048576  # 1MB in bytes
+  max_streams_per_user: 10000
+  max_global_streams_per_user: 10000
+  max_chunks_per_query: 2000000
+  
+
+  
+  
+schema_config:
+  configs:
+    - from: 2020-10-24
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+          #pattern_ingester:
+          #  enabled: true
+          #  metric_aggregation:
+          #    loki_address: localhost:3100
+
+ruler:
+  alertmanager_url: http://192.168.254.254:9093
+
+frontend:
+  encoding: protobuf
+
+querier:
+  engine: {}

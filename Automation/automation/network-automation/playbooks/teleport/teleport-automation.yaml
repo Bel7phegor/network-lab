@@ -1,0 +1,87 @@
+---
+- name: Auto join Teleport cluster for internal hosts
+  hosts: "{{ target_hosts }}" 
+  become: yes
+  vars:
+    teleport_server: "teleport.anphuc.site"
+    teleport_token: "6a32d7d1baac54a9455207c8d7116f40"
+
+  tasks:
+    - name: Install curl (if not installed)
+      apt:
+        name: curl
+        state: present
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Check if Teleport is already installed
+      command: which teleport
+      register: teleport_installed
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Download and run Teleport install script
+      shell: |
+        curl -fsSLk "https://{{ teleport_server }}/scripts/{{ teleport_token }}/install-node.sh" | bash
+      args:
+      when: teleport_installed.rc != 0
+      register: install_result
+
+    - name: Create Teleport config directory
+      file:
+        path: /etc/teleport
+        state: directory
+        mode: 0755
+
+    - name: Deploy custom Teleport configuration
+      template:
+        src: /automation/network-automation/templates/teleport.yaml.j2
+        dest: /etc/teleport.yaml
+        mode: 0644
+      notify: restart teleport
+
+    - name: Ensure Teleport data directory exists
+      file:
+        path: /var/lib/teleport
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Create systemd service file for Teleport
+      copy:
+        content: |
+          [Unit]
+          Description=Teleport Service
+          Documentation=https://gravitational.com/teleport/docs
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=root
+          ExecStart=/usr/local/bin/teleport start --config=/etc/teleport.yaml
+          Restart=on-failure
+          LimitNOFILE=65536
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/teleport.service
+        mode: 0644
+      notify:
+        - reload systemd
+        - restart teleport
+
+    - name: Enable Teleport service
+      systemd:
+        name: teleport
+        enabled: yes
+
+  handlers:
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: restart teleport
+      systemd:
+        name: teleport
+        state: restarted  

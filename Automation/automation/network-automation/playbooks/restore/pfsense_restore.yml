@@ -1,0 +1,47 @@
+---
+- name: Restore pfSense Configuration
+  hosts: pfsense
+  vars:
+    backup_file: ""
+    temp_dir: "/tmp/pfsense_restore_{{ inventory_hostname }}"
+  tasks:
+    - name: Validate backup file exists
+      delegate_to: localhost
+      stat:
+        path: "{{ backup_file }}"
+      register: backup_stat
+      failed_when: not backup_stat.stat.exists
+
+    - name: Create temporary directory
+      delegate_to: localhost
+      file:
+        path: "{{ temp_dir }}"
+        state: directory
+        mode: '0700'
+
+    - name: Extract configuration archive
+      delegate_to: localhost
+      unarchive:
+        src: "{{ backup_file }}"
+        dest: "{{ temp_dir }}"
+        extra_opts: "--strip-components=1"
+        remote_src: no
+
+    - name: Verify extracted config.xml
+      delegate_to: localhost
+      stat:
+        path: "{{ temp_dir }}/pfsense-config.xml"
+      register: config_stat
+      failed_when: not config_stat.stat.exists
+
+    - name: Restore pfSense config
+      community.general.pfconfig:
+        config_file: "{{ temp_dir }}/pfsense-config.xml"
+        state: present
+
+    - name: Cleanup temporary files
+      delegate_to: localhost
+      file:
+        path: "{{ temp_dir }}"
+        state: absent
+      changed_when: false

@@ -1,0 +1,134 @@
+---
+- name: Install Nginx Prometheus Exporter and add Prometheus target
+  hosts: "{{ target_hosts }}"
+  become: yes
+
+  tasks:
+    - name: Ensure Nginx is installed
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Install dependencies (wget, tar)
+      apt:
+        name:
+          - wget
+          - tar
+        state: present
+
+    - name: Create node_exporter user if not exists
+      user:
+        name: node_exporter
+        system: yes
+        shell: /usr/sbin/nologin
+        create_home: no
+
+    - name: Download Nginx Prometheus Exporter binary
+      get_url:
+        url: https://github.com/nginxinc/nginx-prometheus-exporter/releases/download/v1.3.0/nginx-prometheus-exporter_1.3.0_linux_amd64.tar.gz
+        dest: /tmp/nginx-prometheus-exporter.tar.gz
+        mode: '0644'
+
+    - name: Extract Nginx Prometheus Exporter
+      unarchive:
+        src: /tmp/nginx-prometheus-exporter.tar.gz
+        dest: /usr/local/bin/
+        remote_src: yes
+      args:
+        creates: /usr/local/bin/nginx-prometheus-exporter
+
+    - name: Set ownership for nginx-prometheus-exporter binary
+      file:
+        path: /usr/local/bin/nginx-prometheus-exporter
+        owner: node_exporter
+        group: node_exporter
+        mode: '0755'
+    
+    - name: Insert stub_status block with indent
+      template:
+        src: /automation/network-automation/templates/nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+        owner: root
+        group: root
+        mode: '0644'
+      
+      notify: Restart nginx
+
+    - name: Create systemd service for nginx-prometheus-exporter
+      copy:
+        dest: /etc/systemd/system/nginx-prometheus-exporter.service
+        content: |
+          [Unit]
+          Description=Nginx Prometheus Exporter
+          After=network.target
+
+          [Service]
+          User=node_exporter
+          Group=node_exporter
+          Type=simple
+          Restart=always
+          RestartSec=5
+          ExecStart=/usr/local/bin/nginx-prometheus-exporter \
+            --nginx.scrape-uri=http://127.0.0.1:8080/nginx_status \
+            --web.listen-address=:9113 \
+            --web.telemetry-path=/metrics
+
+          [Install]
+          WantedBy=multi-user.target
+      notify:
+        - Reload systemd
+        - Restart nginx-prometheus-exporter
+
+    - name: Enable nginx-prometheus-exporter service
+      systemd:
+        name: nginx-prometheus-exporter
+        enabled: yes
+        state: started
+
+    - name: Upload helper script to monitor-server
+      copy:
+        src: /automation/configs/add_prom_target.py
+        dest: /tmp/add_prom_target.py
+        mode: '0755'
+      delegate_to: monitor-server
+      become: yes
+
+    - name: Add this host to Prometheus scrape targets (monitor-server)
+      command: python3 /tmp/add_prom_target.py /etc/prometheus/prometheus.yml "{{ ansible_default_ipv4.address }}:9113"
+      delegate_to: monitor-server
+      become: yes
+      register: add_prom_result
+      changed_when: "'ADDED' in add_prom_result.stdout"
+
+    - name: Restart Prometheus if targets updated
+      systemd:
+        name: prometheus
+        state: restarted
+      delegate_to: monitor-server
+      become: yes
+      when: "'ADDED' in add_prom_result.stdout"
+
+    - name: Remove helper script (cleanup)
+      file:
+        path: /tmp/add_prom_target.py
+        state: absent
+      delegate_to: monitor-server
+      become: yes
+      when: add_prom_result is defined
+
+  handlers:
+    - name: Restart nginx
+      systemd:
+        name: nginx
+        state: restarted
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: Restart nginx-prometheus-exporter
+      systemd:
+        name: nginx-prometheus-exporter
+        state: restarted
+

@@ -1,0 +1,58 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'severity', 'alert_type']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 1h
+  receiver: 'telegram-alerts'
+  routes:
+  - match:
+      severity: 'notice'
+    receiver: 'telegram-alerts'
+    continue: true
+  - match:
+      severity: 'warning'
+    receiver: 'telegram-alerts'
+    continue: true
+  - match:
+      severity: 'critical'
+    receiver: 'telegram-alerts'
+    continue: true
+  - match:
+      severity: 'emergency'
+    receiver: 'telegram-alerts'
+    continue: true
+  - match:
+      alert_type: 'network_traffic'
+    receiver: 'telegram-alerts'
+    group_by: [alertname, ifName, severity]
+    continue: false
+  - match:
+      alert_type: 'network_anomaly'
+    receiver: 'telegram-alerts'
+    group_by: [alertname, instance]
+    continue: false
+  - match:
+      alert_type: 'interface_status'
+    receiver: 'telegram-alerts'
+    group_by: [alertname, instance, ifDescr]
+    continue: false
+receivers:
+- name: 'telegram-alerts'
+  telegram_configs:
+  - api_url: https://api.telegram.org
+    bot_token: 7926001781:AAGyByulcRakN7riHRdw1AOwGazYztXpeaI
+    chat_id: -4638379865
+    message: '{{ template "telegram.message" . }}'
+    parse_mode: 'HTML'
+    send_resolved: true
+
+templates:
+- /etc/alertmanager/templates/telegram.tmpl
+- /etc/alertmanager/templates/memory-alert.tmpl
+- /etc/alertmanager/templates/backup-alert.tmpl
+- /etc/alertmanager/templates/network-alert.tmpl
+- /etc/alertmanager/templates/port-alert.tmpl
+

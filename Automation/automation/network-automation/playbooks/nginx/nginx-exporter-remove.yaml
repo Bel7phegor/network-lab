@@ -1,0 +1,65 @@
+---
+- name: Remove Nginx Prometheus Exporter and cleanup Prometheus target
+  hosts: "{{ target_hosts }}"
+  become: yes
+
+  tasks:
+    - name: Stop and disable nginx-prometheus-exporter service
+      systemd:
+        name: nginx-prometheus-exporter
+        enabled: no
+        state: stopped
+      ignore_errors: yes
+
+    - name: Remove nginx-prometheus-exporter binary
+      file:
+        path: /usr/local/bin/nginx-prometheus-exporter
+        state: absent
+
+    - name: Remove nginx-prometheus-exporter systemd service
+      file:
+        path: /etc/systemd/system/nginx-prometheus-exporter.service
+        state: absent
+      notify: Reload systemd
+
+    - name: Upload helper script to monitor-server (remove target)
+      copy:
+        src: /automation/configs/remove_prom_target.py
+        dest: /tmp/remove_prom_target.py
+        mode: '0755'
+      delegate_to: monitor-server
+      become: yes
+
+    - name: Remove this host from Prometheus scrape targets
+      command: python3 /tmp/remove_prom_target.py /etc/prometheus/prometheus.yml "{{ ansible_default_ipv4.address }}:9113"
+      delegate_to: monitor-server
+      become: yes
+      register: remove_prom_result
+      changed_when: "'REMOVED' in remove_prom_result.stdout"
+
+    - name: Restart Prometheus if targets updated
+      systemd:
+        name: prometheus
+        state: restarted
+      delegate_to: monitor-server
+      become: yes
+      when: "'REMOVED' in remove_prom_result.stdout"
+
+    - name: Remove helper script (cleanup)
+      file:
+        path: /tmp/remove_prom_target.py
+        state: absent
+      delegate_to: monitor-server
+      become: yes
+      when: remove_prom_result is defined
+
+  handlers:
+    - name: Restart nginx
+      systemd:
+        name: nginx
+        state: restarted
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+

@@ -1,0 +1,63 @@
+---
+- name: Check Nginx status on selected hosts
+  hosts: "{{ target_hosts }}"
+  become: yes
+  vars:
+    nginx_service: "nginx"
+
+  tasks:
+    - name: Check if Nginx package is installed
+      package_facts:
+        manager: auto
+      register: pkg_facts
+      changed_when: false
+
+    - name: Get Nginx service status
+      systemd:
+        name: "{{ nginx_service }}"
+      register: nginx_service_status
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Check Nginx processes
+      shell: |
+        pgrep nginx | wc -l
+      register: nginx_processes
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Check Nginx listening ports
+      shell: |
+        ss -tulpn | grep nginx || echo "No Nginx ports listening"
+      register: nginx_ports
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Check Nginx config syntax
+      shell:  nginx -t 
+      register: nginx_config_test
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Get Nginx version
+      shell: |
+        nginx -v || echo "Nginx not available"
+      register: nginx_version
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Display Nginx status summary
+      debug:
+        msg:
+          - "📊 NGINX STATUS SUMMARY - {{ ansible_hostname }}"
+          - "============================================"
+          - "📦 Package installed: {{ 'nginx' in ansible_facts.packages }}"
+          - "🚀 Service status: {{ nginx_service_status.status.ActiveState | default('unknown') }}"
+          - "🔧 Service enabled: {{ nginx_service_status.status.UnitFileState | default('unknown') }}"
+          - "🔌 Processes running: {{ nginx_processes.stdout | default('0') }}"
+          - "🌐 Listening ports:"
+          - "{{ nginx_ports.stdout_lines | default([]) }}"
+          - "✅ Config test: {{ (nginx_config_test.rc | default(1)) == 0 | ternary('PASS', 'FAIL') }}"
+          - "📍 Version: {{ nginx_version.stderr | default(nginx_version.stdout) | regex_replace('nginx version: ', '') }}"
+          - "🖥️  IP Address: {{ ansible_default_ipv4.address }}"
+
