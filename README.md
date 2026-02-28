@@ -148,21 +148,11 @@ The monitoring system is located in the DMZ zone (`VLAN 254`), deployed using **
 ## Key Outcomes
 
 ### 1. Device Automation
-- **Automated Backup** 
-<p align="center">
-<video src="https://github.com/Bel7phegor/network-lab/raw/main/Images/2.mp4" width="540" controls></video>
-</p>
+- **Automated Backup** https://github.com/Bel7phegor/network-lab/raw/main/Images/2.mp4
 
-- **Automated installation of Docker, Promtail, Node_exporter, Nginx**
-<p align="center">
-<video src="https://github.com/Bel7phegor/network-lab/raw/main/Images/3.mp4" width="540" controls></video>
-</p>
+- **Automated installation of Docker, Promtail, Node_exporter, Nginx** https://github.com/Bel7phegor/network-lab/raw/main/Images/3.mp4
 
-- **Automated installation of Teleport Agent** 
-
-<p align="center">
-<video src="https://github.com/Bel7phegor/network-lab/raw/main/Images/1.mp4" width="540" controls></video>
-</p>
+- **Automated installation of Teleport Agent** https://github.com/Bel7phegor/network-lab/raw/main/Images/1.mp4
 
 ### 2. Comprehensive Device Monitoring
 * **PFSense Monitoring Dashboard**
