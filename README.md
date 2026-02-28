@@ -40,8 +40,7 @@ The system uses Class C IP ranges (192.168.x.x) structured as 192.168.VlanID.Hos
 | **10** | `192.168.10.0/24` | Department A | Admin / IT Team | 
 | **20** | `192.168.20.0/24` | Department B | HR / Staff | 
 | **30** | `192.168.30.0/24` | Department C | Server Farm (Web, App, DB) | 
-| **40** | `192.168.40.0/24` | Guest / IoT | 
-Guest Network (Internet Only) | 
+| **40** | `192.168.40.0/24` | Guest / IoT | Guest Network (Internet Only) | 
 | **254** | `192.168.254.0/24` | **DMZ Services** | Monitor/logs/alert
 
 > **Core Switch Configuration:**
@@ -151,18 +150,18 @@ The monitoring system is located in the DMZ zone (`VLAN 254`), deployed using **
 ### 1. Device Automation
 - **Automated Backup** 
 <p align="center">
-<video src="Images/2.mp4" width="540" controls></video>
+<video src="https://github.com/Bel7phegor/network-lab/raw/main/Images/2.mp4" width="540" controls></video>
 </p>
 
 - **Automated installation of Docker, Promtail, Node_exporter, Nginx**
 <p align="center">
-<video src="Images/3.mp4" width="540" controls></video>
+<video src="https://github.com/Bel7phegor/network-lab/raw/main/Images/3.mp4" width="540" controls></video>
 </p>
 
 - **Automated installation of Teleport Agent** 
 
 <p align="center">
-<video src="Images/1.mp4" width="540" controls></video>
+<video src="https://github.com/Bel7phegor/network-lab/raw/main/Images/1.mp4" width="540" controls></video>
 </p>
 
 ### 2. Comprehensive Device Monitoring
