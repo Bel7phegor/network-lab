@@ -7,8 +7,9 @@ groups:
     labels:
       severity: critical
       service: nginx
+      alert_type: service 
     annotations:
-      summary: "Nginx is DOWN (instance {{ $labels.instance }})"
-      description: "Nginx service has been down for more than 1 minute.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-      impact: "All web services relying on Nginx are unavailable"
-      action: "1. Check Nginx service status: systemctl status nginx\n2. Verify server connectivity\n3. Check logs: journalctl -u nginx -n 50"
+      summary: "Nginx is DOWN ({{ $labels.instance }})"
+      description: "Nginx service is unavailable."
+      impact: "Web services down"
+      action: "Check: systemctl status nginx"

@@ -1,0 +1,94 @@
+---
+- name: Deploy Promtail (Log Collector)
+  hosts: "{{ target_hosts | default('all') }}"
+  become: yes
+  vars:
+
+    promtail_version: "2.9.2"
+    loki_url: "http://192.168.254.254:3100/loki/api/v1/push"
+    base_dir: "/data/promtail"
+    enable_docker_logs: true
+
+  tasks:
+    # ==========================================
+    - name: Check Docker presence
+      command: docker --version
+      register: docker_check
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Auto-install Docker if missing
+      block:
+        - name: Notify user
+          debug:
+            msg: "!!!Docker is missing. Installing..."
+
+        - name: Update APT Cache
+          apt:
+            update_cache: yes
+
+        - name: Install Docker Packages
+          apt:
+            name:
+              - docker.io
+              - docker-compose
+            state: present
+
+        - name: Enable & Start Docker Service
+          service:
+            name: docker
+            state: started
+            enabled: yes
+      when: docker_check.rc != 0
+
+    # ==========================================
+    - name: Create Promtail Config Directory
+      file:
+        path: "{{ base_dir }}"
+        state: directory
+        mode: '0755'
+      tags: ['install']
+
+    - name: Deploy Config File from Template
+      template:
+        src: templates/config.yaml.j2
+        dest: "{{ base_dir }}/config.yaml"
+        mode: '0644'
+      notify: Restart Promtail
+      tags: ['install', 'config']
+
+    # ==========================================
+    - name: Deploy Promtail Container
+      community.docker.docker_container:
+        name: promtail
+        image: "grafana/promtail:{{ promtail_version }}"
+        state: started
+        restart_policy: unless-stopped
+        privileged: yes 
+        volumes:
+          - "{{ base_dir }}/config.yaml:/etc/promtail/config.yaml"
+          - /var/log:/var/log:ro
+          - /var/run/docker.sock:/var/run/docker.sock:ro
+          - /var/lib/docker/containers:/var/lib/docker/containers:ro
+        command: -config.file=/etc/promtail/config.yaml
+      tags: ['install']
+
+    # ==========================================
+    - name: Remove Promtail Container
+      community.docker.docker_container:
+        name: promtail
+        state: absent
+      tags: ['uninstall', 'wipe', 'never']
+
+    - name: Remove Data Directory
+      file:
+        path: "{{ base_dir }}"
+        state: absent
+      tags: ['wipe', 'never']
+
+  handlers:
+    - name: Restart Promtail
+      community.docker.docker_container:
+        name: promtail
+        state: started
+        restart: yes

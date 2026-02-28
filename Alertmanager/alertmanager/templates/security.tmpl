@@ -1,0 +1,11 @@
+{{- define "security.alert" -}}
+🔴 <b>SURICATA BLOCKED IP</b>
+
+<b>Attacker IP:</b> <code>{{ .Labels.src_ip }}</code>
+<b>Threat Class:</b> {{ .Labels.classification }}
+<b>Target:</b> {{ .Annotations.description }}
+
+<b>Action:</b> BLOCKED (Auto)
+<b>Status:</b> FIRING
+<i>Time: {{ .StartsAt.Local.Format "15:04:05 02/01/2006" }}</i>
+{{- end -}}

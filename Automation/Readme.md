@@ -13,27 +13,19 @@
     pip3 --version
     pip3 install ansible netmiko napalm paramiko
     ```
-# Cấu trúc thư mục chuẩn gợi ý cho Ansible project:
-
+# Cấu trúc thư mục:
     network-automation/
     ├── ansible.cfg
     ├── inventory/
-    │   ├── hosts           # File khai báo các thiết bị (inventory)
-    │   └── group_vars/
-    │       └── routers.yml # Biến dùng chung cho nhóm thiết bị
+    │   └── hosts         # File khai báo các thiết bị
     ├── playbooks/
-    │   ├── config_hostname.yml
-    │   ├── backup_config.yml
-    │   └── ...
-    ├── roles/              # Dùng khi dự án lớn
-    │   └── cisco_config/
-    │       ├── tasks/
-    │       │   └── main.yml
-    │       ├── templates/
-    │       ├── defaults/
-    │       └── ...
-    ├── vars/
-    │   └── global_vars.yml # Biến dùng chung toàn hệ thống
+    │   ├── backup/       # Chứa các file backup tự động từng loại thiết bị
+    │   ├── maintenace/   # Chứa các file cài đặt, xóa tự động docker và hệ thống    
+    │   ├── monitoring/   # Chứa các file cài đặt, xóa tự động node_exporter, promtail 
+    │   ├── nginx/        # Chứa các file cài đặt, xóa tự động của nginx
+    │   └── teleport/     # Chứa các file thêm, xóa agent của teleport 
+    ├── secrets/          # Chứa file mã hóa 
+    ├── templates/        # Chứa mẫu cấu hình đối với từng công cụ
     └── README.md
 
 # Cấu hình thiết bị

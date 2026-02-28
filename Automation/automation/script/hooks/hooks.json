@@ -1,0 +1,13 @@
+[
+  {
+    "id": "block-ip",
+    "execute-command": "/automation/script/trigger_block.sh",
+    "command-working-directory": "/automation/script",
+    "pass-arguments-to-command": [
+      {
+        "source": "payload",
+        "name": "commonAnnotations.attacker_ip"
+      }
+    ]
+  }
+]

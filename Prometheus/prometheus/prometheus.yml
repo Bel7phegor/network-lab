@@ -7,7 +7,8 @@ global:
 # Alertmanager configuration
 alerting:
   alertmanagers:
-    - static_configs:
+    - path_prefix: /alertmanager
+      static_configs:
         - targets:
           - 192.168.254.254:9093
           # - alertmanager:9093
@@ -19,14 +20,20 @@ rule_files:
   - rules/backup-rules.yml
   - rules/pfsense-rules.yml
   - rules/network-traffic.rules.yml
+  - rules/security.rules.yml
+  - rules/system.rules.yml
   # - "first_rules.yml"
   # - "second_rules.yml"
 
 # A scrape configuration containing exactly one endpoint to scrape:
 # Here it's Prometheus itself.
 scrape_configs:
+  - job_name: "nginx-vts"
+    static_configs:
+      - targets:
+        - "192.168.254.110:9113"
   # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
-  - job_name: "prometheus"
+  - job_name: "monitoring-server"
     # metrics_path defaults to '/metrics'
     # scheme defaults to 'http'.
     static_configs:
@@ -44,6 +51,11 @@ scrape_configs:
         - "10.10.10.2"
         labels:
           job: 'SW-L3-KA'
+      - targets: 
+        - "10.10.20.2"
+        labels:
+          job: 'SW-L3-KB'
+
     metrics_path: /snmp
     params:
       module: [if_mib, cisco_device, system]
@@ -55,7 +67,7 @@ scrape_configs:
       - target_label: __address__
         replacement: 192.168.254.254:9116
 
-  - job_name: "wf-pfsense"
+  - job_name: "pfsense-fw"
     static_configs:
       - targets: 
         - "10.10.30.1"
@@ -70,8 +82,13 @@ scrape_configs:
       - target_label: __address__
         replacement: 192.168.254.254:9116
 
-  - job_name: 'web-server'
+  - job_name: 'teleport-server'
     static_configs:
       - targets:
         - "192.168.254.100:9100"
-        - "192.168.254.100:9113"
+          #        - "192.168.254.100:9113"
+  
+  - job_name: 'web-server'
+    scrape_interval: 
+    static_configs:
+      - targets: ['192.168.254.110:9100']

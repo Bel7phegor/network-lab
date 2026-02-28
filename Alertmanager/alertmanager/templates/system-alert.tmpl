@@ -1,0 +1,45 @@
+{{- /* --- AVAILABILITY (KEEP RESOLVE) --- */ -}}
+{{- define "system.availability.alert" -}}
+{{- if eq .Status "firing" -}} 🔴<b>INSTANCE DOWN</b>
+{{- else -}}🟢 <b>INSTANCE RECOVERED</b>
+{{- end }}
+
+<b>Alert:</b> {{ .Labels.alertname }}
+<b>Device Name:</b> {{ .Labels.job }}
+<b>IP Address:</b> <code>{{ .Labels.instance }}</code>
+{{- if eq .Status "firing" }}
+<b>Summary:</b> {{ .Annotations.summary }}
+<b>Description:</b> {{ .Annotations.description }}
+{{- end }}
+<i>Time: {{ .StartsAt.Local.Format "2006-01-02 15:04:05" }}</i>
+<b>Severity:</b> {{ .Labels.severity | toUpper }}
+{{- end -}}
+
+{{- /* --- DISK (NO RESOLVE) --- */ -}}
+{{- define "system.disk.alert" -}}
+{{- if eq .Labels.severity "critical" -}}🔴<b>DISK CRITICAL</b>
+{{- else -}} 🟠<b>DISK WARNING</b>
+{{- end }}
+
+<b>Alert:</b> {{ .Labels.alertname }}
+<b>Device Name:</b> {{ .Labels.job }}
+<b>IP Address:</b> <code>{{ .Labels.instance }}</code>
+<b>Mount Point:</b> <code>{{ .Labels.mountpoint }}</code>
+<b>Description:</b> {{ .Annotations.description }}
+<i>Time: {{ .StartsAt.Local.Format "2006-01-02 15:04:05" }}</i>
+
+<b>Severity:</b> {{ .Labels.severity | toUpper }}
+{{- end -}}
+
+{{- /* --- CPU (NO RESOLVE) --- */ -}}
+{{- define "system.cpu.alert" -}}
+🔴 <b>HIGH CPU LOAD</b>
+
+<b>Alert:</b> {{ .Labels.alertname }}
+<b>Device Name:</b> {{ .Labels.job }}
+<b>IP Address:</b> <code>{{ .Labels.instance }}</code>
+<b>Load Info:</b> {{ .Annotations.description }}
+<i>Time: {{ .StartsAt.Local.Format "2006-01-02 15:04:05" }}</i>
+
+<b>Severity:</b> {{ .Labels.severity | toUpper }}
+{{- end -}}

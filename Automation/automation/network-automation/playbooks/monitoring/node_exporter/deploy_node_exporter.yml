@@ -1,0 +1,112 @@
+---
+- name: Deploy Node Exporter (Auto-install Docker dependencies)
+  hosts: "{{ target_hosts }}"
+  become: yes
+  vars:
+    node_exporter_version: "latest"
+    node_exporter_port: 9100
+    base_dir: "/data/node_exporter"
+
+  tasks:
+    # ==========================================
+    - name: Check if Docker is installed
+      command: docker --version
+      register: docker_check
+      ignore_errors: yes
+      changed_when: false
+
+    # ==========================================
+    - name: Install Docker Dependency Block
+      block:
+        - name: Install | Notify user
+          debug:
+            msg: "Docker is missing. Auto-installing Docker now..."
+
+        - name: Install | Update APT Cache
+          apt:
+            update_cache: yes
+
+        - name: Install | Docker Packages
+          apt:
+            name: ['docker.io', 'docker-compose']
+            state: present
+
+        - name: Install | Enable & Start Service
+          service:
+            name: docker
+            state: started
+            enabled: yes
+            
+        - name: Install | Verify Docker installation
+          command: docker --version
+          register: new_docker_ver
+          
+        - name: Install | Success
+          debug:
+            msg: "Docker installed successfully: {{ new_docker_ver.stdout }}"
+
+      when: docker_check.rc != 0
+
+    # ==========================================
+    
+    - name: Check if Node Exporter container exists
+      command: docker ps -q -f name=node_exporter
+      register: container_check
+      changed_when: false
+      ignore_errors: yes 
+
+    - name: Deploy Node Exporter Block
+      block:
+        - name: Setup | Create Data Directory
+          file:
+            path: "{{ base_dir }}"
+            state: directory
+            mode: '0755'
+
+        - name: Setup | Deploy Container
+          community.docker.docker_container:
+            name: node_exporter
+            image: "prom/node-exporter:{{ node_exporter_version }}"
+            state: started
+            restart_policy: unless-stopped
+            ports:
+              - "{{ node_exporter_port }}:9100"
+            volumes:
+              - /proc:/host/proc:ro
+              - /sys:/host/sys:ro
+              - /:/rootfs:ro
+            command:
+              - '--path.procfs=/host/proc'
+              - '--path.sysfs=/host/sys'
+              - '--path.rootfs=/rootfs'
+              - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+
+
+        - name: Setup | Verify Metric Endpoint
+          uri:
+            url: "http://localhost:{{ node_exporter_port }}/metrics"
+            status_code: 200
+          register: verify_result
+          until: verify_result.status == 200
+          retries: 5
+          delay: 2
+
+        - name: Setup | Completion Message
+          debug:
+            msg: "Node Exporter is ready on port {{ node_exporter_port }}"
+
+      when: container_check.stdout | default('') == ""
+      tags: ['install']
+
+    # ==========================================
+    - name: Remove Node Exporter Container
+      community.docker.docker_container:
+        name: node_exporter
+        state: absent
+      tags: ['uninstall', 'wipe']
+
+    - name: Remove Data Directory
+      file:
+        path: "{{ base_dir }}"
+        state: absent
+      tags: ['wipe']

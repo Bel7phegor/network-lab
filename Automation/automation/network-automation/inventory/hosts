@@ -1,23 +1,35 @@
 [switches]
-DMZ ansible_host=192.168.254.1 ansible_user=anphuc ansible_password=anphuc1231 ansible_connection=network_cli ansible_network_os=ios ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o KexAlgorithms=+diffie-hellman-group14-sha1 -o HostKeyAlgorithms=+ssh-rsa -o Ciphers=+aes128-cbc'
-SW-L3-KB ansible_host=10.10.20.2 ansible_user=anphuc ansible_password=anphuc1231 ansible_connection=network_cli ansible_network_os=ios ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o KexAlgorithms=diffie-hellman-group1-sha1 -o HostKeyAlgorithms=ssh-rsa -o Ciphers=aes128-cbc'
-SW-L3-KA ansible_host=10.10.10.2 ansible_user=anphuc ansible_password=anphuc1231 ansible_connection=network_cli ansible_network_os=ios ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o KexAlgorithms=diffie-hellman-group1-sha1 -o HostKeyAlgorithms=ssh-rsa -o Ciphers=aes128-cbc'
+DMZ ansible_host=192.168.254.1
+SW-L3-KB ansible_host=10.10.20.2
+SW-L3-KA ansible_host=10.10.10.2
 
-[pfsense]
-pfsense_fw
-
-[pfsense:vars]
-ansible_host=10.10.30.1
+[switches:vars]
 ansible_user=anphuc
 ansible_password=Anphuc@1231
+ansible_connection=network_cli
+ansible_network_os=ios
+
+ansible_become=yes
+ansible_become_method=enable
+ansible_become_password=Anphuc@1231
+
+ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o KexAlgorithms=+diffie-hellman-group1-sha1 -o HostKeyAlgorithms=+ssh-rsa -o Ciphers=+aes128-cbc'
+
+[pfsense]
+pfsense_fw ansible_host=10.10.30.1 ansible_port=22
+
+[pfsense:vars]
+ansible_user=root
+ansible_password=Anphuc@1231
+ansible_scp_if_ssh=yes
 ansible_connection=ssh
 ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 
 [dmz]
 teleport-server ansible_host=192.168.254.100 ansible_user=root ansible_ssh_pass='{{ vault_ubuntu_password }}'
 monitor-server ansible_host=192.168.254.254 ansible_user=root ansible_ssh_pass='{{ vault_ubuntu_password }}'
+web-server ansible_host=192.168.254.110 ansible_user=onlineshop ansible_ssh_pass='{{ vault_ubuntu_password }}'
 
 [internal]
-dev-1 ansible_host=192.168.10.10 ansible_user=dev1 ansible_ssh_pass='{{ vault_ubuntu_password }}' ansible_become_pass='{{ vault_ubuntu_password }}'
-dev-2 ansible_host=192.168.40.10 ansible_user=dev2 ansible_ssh_pass='{{ vault_ubuntu_password }}' ansible_become_pass='{{ vault_ubuntu_password }}'
-
+dev1 ansible_host=192.168.30.10 ansible_user=dev1 ansible_ssh_pass='{{ vault_ubuntu_password }}'
+dev2 ansible_host=192.168.40.40 ansible_user=dev2 ansible_ssh_pass='{{ vault_ubuntu_password }}'

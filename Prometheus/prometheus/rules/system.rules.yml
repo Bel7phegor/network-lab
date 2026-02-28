@@ -1,0 +1,42 @@
+groups:
+- name: system-health
+  rules:
+  - alert: InstanceDown
+    expr: up == 0
+    for: 2m
+    labels:
+      severity: critical
+      alert_type: availability
+    annotations:
+      summary: "Instance {{ $labels.instance }} down"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 2 minutes."
+
+  - alert: DiskSpaceLowWarning
+    expr: (node_filesystem_avail_bytes{fstype!=""} / node_filesystem_size_bytes{fstype!=""} * 100) < 15
+    for: 10m
+    labels:
+      severity: warning
+      alert_type: disk
+    annotations:
+      summary: "Disk space low on {{ $labels.instance }}"
+      description: "Disk usage is above 85% (Available: {{ $value | printf \"%.2f\" }}%)"
+
+  - alert: DiskSpaceLowCritical
+    expr: (node_filesystem_avail_bytes{fstype!=""} / node_filesystem_size_bytes{fstype!=""} * 100) < 5
+    for: 5m
+    labels:
+      severity: critical
+      alert_type: disk
+    annotations:
+      summary: "Disk space CRITICAL on {{ $labels.instance }}"
+      description: "Disk usage is above 95% (Available: {{ $value | printf \"%.2f\" }}%)"
+
+  - alert: HighCpuLoad
+    expr: node_load1 > (count without (cpu) (node_cpu_seconds_total{mode="idle"})) * 1.5
+    for: 10m
+    labels:
+      severity: warning
+      alert_type: cpu
+    annotations:
+      summary: "High CPU Load on {{ $labels.instance }}"
+      description: "Load average is highly loaded (Current Load: {{ $value }})"

@@ -1,0 +1,26 @@
+groups:
+  - name: suricata-alerts
+    rules:
+      - alert: SuricataIntrusionDetected
+        expr: |
+          sum by (src_ip, msg, classification, priority) (
+            count_over_time(
+              {job="pfsense"}
+              # 1. Bắt tất cả dòng có chứa thông tin Priority (bao gồm cả ET SCAN và SURICATA)
+              |= "Priority:"
+              # 2. Regex mới: Bắt thêm trường priority để lọc sau này
+              | regexp `\] (?P<msg>.*?) \[Classification: (?P<classification>.*?)\] \[Priority: (?P<priority>\d+)\] \{(?P<proto>.*?)\} (?P<src_ip>[\d\.]+)`
+              # 3. QUAN TRỌNG: Loại bỏ Priority 3 (thường là rác/thông tin)
+              # Chỉ giữ lại Priority 1 (Cao) và 2 (Trung bình)
+              | priority != "3"
+              [1m]
+            )
+          ) > 0
+        for: 0m
+        labels:
+          severity: critical
+          alert_type: security
+        annotations:
+          # Hiển thị mức độ ưu tiên ngay trong tin nhắn
+          description: "[P{{ $labels.priority }}] {{ $labels.msg }}"
+          summary: "Threat Detected: {{ $labels.src_ip }}"

@@ -1,0 +1,87 @@
+---
+- name: Docker Lifecycle (Smart Check)
+  hosts: "{{ target_hosts | default('all') }}"
+  become: yes
+  vars:
+    docker_packages:
+      - docker.io
+      - docker-compose
+
+  tasks:
+    # ==========================================
+
+    - name: Check if Docker is already installed
+      command: docker --version
+      register: docker_check
+      ignore_errors: yes     
+      changed_when: false     
+      tags: ['install']
+
+    - name: Docker already exists
+      debug:
+        msg: "Docker is already installed on this server! Found: {{ docker_check.stdout }}"
+      when: docker_check.rc == 0
+      tags: ['install']
+
+
+    - name: Install Docker Block
+      block:
+        - name: Update APT Cache
+          apt:
+            update_cache: yes
+
+        - name: Install Docker Packages (docker.io)
+          apt:
+            name: "{{ docker_packages }}"
+            state: present
+
+        - name: Ensure Docker service is running
+          service:
+            name: docker
+            state: started
+            enabled: yes
+            
+        - name: Check new Docker version
+          command: docker --version
+          register: new_docker_version
+
+        - name: Installation Success
+          debug:
+            msg: "Docker installed successfully! Version: {{ new_docker_version.stdout }}"
+
+
+      when: docker_check.rc != 0
+      tags: ['install']
+
+    # ==========================================
+    - name: Stop Docker service
+      service:
+        name: docker
+        state: stopped
+      ignore_errors: yes
+      tags: ['uninstall', 'wipe']
+
+    - name: Remove Docker packages
+      apt:
+        name: "{{ docker_packages }}"
+        state: absent
+        purge: yes
+      tags: ['uninstall', 'wipe']
+
+    - name: Autoremove dependencies
+      apt:
+        autoremove: yes
+      tags: ['uninstall', 'wipe']
+
+    # ==========================================
+    - name: WIPE ALL Docker Data (/var/lib/docker)
+      file:
+        path: /var/lib/docker
+        state: absent
+      tags: ['wipe']
+
+    - name: Remove Docker Config (/etc/docker)
+      file:
+        path: /etc/docker
+        state: absent
+      tags: ['wipe']

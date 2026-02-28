@@ -44,7 +44,7 @@
         owner: node_exporter
         group: node_exporter
         mode: '0755'
-    
+      
     - name: Insert stub_status block with indent
       template:
         src: /automation/network-automation/templates/nginx.conf.j2
@@ -52,7 +52,6 @@
         owner: root
         group: root
         mode: '0644'
-      
       notify: Restart nginx
 
     - name: Create systemd service for nginx-prometheus-exporter
@@ -86,36 +85,35 @@
         enabled: yes
         state: started
 
+    # --- UPDATE PROMETHEUS CONFIG ---
     - name: Upload helper script to monitor-server
       copy:
-        src: /automation/configs/add_prom_target.py
-        dest: /tmp/add_prom_target.py
+        src: /automation/configs/manage_prom_target.py
+        dest: /tmp/manage_prom_target.py
         mode: '0755'
       delegate_to: monitor-server
       become: yes
 
     - name: Add this host to Prometheus scrape targets (monitor-server)
-      command: python3 /tmp/add_prom_target.py /etc/prometheus/prometheus.yml "{{ ansible_default_ipv4.address }}:9113"
+      command: python3 /tmp/manage_prom_target.py /data/prometheus/prometheus.yml "nginx-vts" "{{ ansible_default_ipv4.address }}:9113" add
       delegate_to: monitor-server
       become: yes
-      register: add_prom_result
-      changed_when: "'ADDED' in add_prom_result.stdout"
+      register: prom_result
+      changed_when: "'ADDED' in prom_result.stdout or 'CREATED' in prom_result.stdout"
 
-    - name: Restart Prometheus if targets updated
-      systemd:
-        name: prometheus
-        state: restarted
+    - name: Restart Prometheus Container if targets updated
+      shell: docker restart prometheus
       delegate_to: monitor-server
       become: yes
-      when: "'ADDED' in add_prom_result.stdout"
+      when: prom_result.changed
 
     - name: Remove helper script (cleanup)
       file:
-        path: /tmp/add_prom_target.py
+        path: /tmp/manage_prom_target.py
         state: absent
       delegate_to: monitor-server
       become: yes
-      when: add_prom_result is defined
+      when: prom_result is defined
 
   handlers:
     - name: Restart nginx
@@ -131,4 +129,3 @@
       systemd:
         name: nginx-prometheus-exporter
         state: restarted
-

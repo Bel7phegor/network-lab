@@ -1,28 +1,41 @@
-{{ define "telegram.message" }}
-{{if eq .Status "firing"}}
-  {{if eq (index .Alerts 0).Labels.alertname "InterfaceDown"}}
-Status: <b>FIRING 🔥 (Interface DOWN)</b>
-  {{else if eq (index .Alerts 0).Labels.alertname "InterfaceUp"}}
-Status: <b>RECOVERY ✅ (Interface UP)</b>
-  {{else}}
-Status: <b>{{.Status | toUpper}} 🔥</b>
-  {{end}}
-{{else}}
-Status: <b>{{.Status | toUpper}} ✅</b>
-{{end}}
-{{ range .Alerts }}
-Alert: {{ .Labels.alertname }}
-Description: {{ .Annotations.description }}
-Details:
-  {{ range .Labels.SortedPairs }} - {{ .Name }}: {{ .Value }}
-  {{ end }}
-{{$severity := .Labels.severity -}}
-{{if eq $severity "warning" -}}
-Severity: {{$severity}} ⚠️
-{{else if eq $severity "critical" -}}
-Severity: {{$severity}} 🚨
-{{else -}}
-Severity: {{$severity}}
+{{- define "telegram.main" -}}
+{{- range .Alerts -}}
+{{- /* --- SYSTEM RESOURCES (No Resolve) --- */ -}}
+{{- if eq .Labels.alert_type "memory" -}}{{ template "memory.alert" . }}
+{{- else if eq .Labels.alert_type "disk" -}}{{ template "system.disk.alert" . }}
+{{- else if eq .Labels.alert_type "cpu" -}}{{ template "system.cpu.alert" . }}
+
+{{- /* --- NETWORK (No Resolve) --- */ -}}
+{{- else if eq .Labels.alert_type "network_traffic" -}}{{ template "network.alert" . }}
+{{- else if eq .Labels.alert_type "network_anomaly" -}}{{ template "network.alert" . }}
+
+{{- /* --- SECURITY (No Resolve) --- */ -}}
+{{- else if eq .Labels.alert_type "security" -}}{{ template "security.alert" . }}
+
+{{- /* --- INFRASTRUCTURE (Keep Resolve) --- */ -}}
+{{- else if eq .Labels.alert_type "interface_status" -}}{{ template "interface.status.alert" . }}
+{{- else if eq .Labels.alert_type "availability" -}}{{ template "system.availability.alert" . }}
+
+{{- /* --- OTHERS --- */ -}}
+{{- else if eq .Labels.alert_type "backup" -}}{{ template "backup.alert" . }}
+{{- else -}}{{ template "telegram.default" . }}
+{{- end }}
+------------------------------------
+{{ end -}}
 {{- end -}}
-{{ end }}
-{{ end }}
+
+{{- define "telegram.default" -}}
+{{- if eq .Status "firing" -}} 🔴<b>{{ .Labels.alertname }}</b>
+{{- else -}}🟢 <b>{{ .Labels.alertname }} (RESOLVED)</b>
+{{- end }}
+
+<b>Device Name:</b> {{ .Labels.job }}
+<b>IP Address:</b> {{ .Labels.instance }}
+<b>Description:</b> {{ .Annotations.description }}
+<b>Details:</b>
+{{- range .Labels.SortedPairs }}
+• {{ .Name }}: {{ .Value }}
+{{- end }}
+<i>Time: {{ .StartsAt.Local.Format "2006-01-02 15:04:05" }}</i>
+<b>Severity:</b> {{ .Labels.severity | toUpper }}
+{{- end -}}

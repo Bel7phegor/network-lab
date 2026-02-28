@@ -1,56 +1,72 @@
 groups:
 - name: network-traffic-alerts
   rules:
-  # Cảnh báo traffic inbound cao
-  - alert: HighInboundTraffic
-    expr: irate(ifHCInOctets{job!="", ifName!~"lo|veth.*"}[5m]) * 8 > 100000000  # >100Mbps
-    for: 5m
+ 
+  - alert: HighInboundTrafficWarning
+    expr: irate(ifHCInOctets{ifName!~"lo|veth.*"}[5m]) * 8 > 500000 
+    for: 1m  
     labels:
-      severity: '{{ if gt $value 150000000 }}critical{{ else }}warning{{ end }}'
-      alert_type: 'network_traffic'
-      direction: 'in'
+      severity: warning
+      alert_type: network_traffic
+      direction: in
     annotations:
-      summary: "High inbound traffic on {{ $labels.ifName }}"
-      description: |
-        INBOUND TRAFFIC ALERT
-        Interface: {{ $labels.ifName }}
-        Current: {{ $value | humanize }} bps
-        Threshold: 100 Mbps
+      summary: "High inbound traffic (Warning)"
+      description: "Interface {{ $labels.ifName }} traffic > 500kbps (Current: {{ $value | humanize }}bps)"
+      value: "{{ $value | humanize }}bps" 
+      threshold: "500kbps"
 
-  # Cảnh báo traffic outbound cao
-  - alert: HighOutboundTraffic
-    expr: irate(ifHCOutOctets{job!="", ifName!~"lo|veth.*"}[5m]) * 8 > 50000000  # >50Mbps
-    for: 5m
+  
+  - alert: HighInboundTrafficCritical
+    expr: irate(ifHCInOctets{ifName!~"lo|veth.*"}[5m]) * 8 > 1000000 
+    for: 1m
     labels:
-      severity: '{{ if gt $value 75000000 }}critical{{ else }}warning{{ end }}'
-      alert_type: 'network_traffic'
-      direction: 'out'
+      severity: critical
+      alert_type: network_traffic
+      direction: in
     annotations:
-      summary: "High outbound traffic on {{ $labels.ifName }}"
-      description: |
-        OUTBOUND TRAFFIC ALERT
-        Interface: {{ $labels.ifName }}
-        Current: {{ $value | humanize }} bps
-        Threshold: 50 Mbps
+      summary: "High inbound traffic (CRITICAL)"
+      description: "Interface {{ $labels.ifName }} traffic > 1Mbps (Current: {{ $value | humanize }}bps)"
+      value: "{{ $value | humanize }}bps"
+      threshold: "1Mbps"
 
-  # Cảnh báo traffic bất thường
+  - alert: HighOutboundTrafficWarning
+    expr: irate(ifHCOutOctets{ifName!~"lo|veth.*"}[5m]) * 8 > 500000 
+    for: 1m
+    labels:
+      severity: warning
+      alert_type: network_traffic
+      direction: out
+    annotations:
+      summary: "High outbound traffic (Warning)"
+      description: "Interface {{ $labels.ifName }} traffic > 500kbps (Current: {{ $value | humanize }}bps)"
+      value: "{{ $value | humanize }}bps"
+      threshold: "500kbps"
+
+
+  - alert: HighOutboundTrafficCritical
+    expr: irate(ifHCOutOctets{ifName!~"lo|veth.*"}[5m]) * 8 > 1000000 
+    for: 1m
+    labels:
+      severity: critical
+      alert_type: network_traffic
+      direction: out
+    annotations:
+      summary: "High outbound traffic (CRITICAL)"
+      description: "Interface {{ $labels.ifName }} traffic > 1Mbps (Current: {{ $value | humanize }}bps)"
+      value: "{{ $value | humanize }}bps"
+      threshold: "1Mbps"
+
+
   - alert: NetworkTrafficAnomaly
     expr: |
       (
-        irate(ifHCInOctets{job!="", ifName!~"lo|veth.*"}[5m]) * 8
-        >
-        avg(irate(ifHCInOctets{job!="", ifName!~"lo|veth.*"}[5m] offset 7d)) by (ifName) * 8 * 3
+        irate(ifHCInOctets{ifName!~"lo|veth.*"}[5m]) * 8 > 
+        (avg(irate(ifHCInOctets{ifName!~"lo|veth.*"}[5m] offset 7d)) by (ifName) * 8 * 3) + 10000
       )
-      or
-      (
-        irate(ifHCOutOctets{job!="", ifName!~"lo|veth.*"}[5m]) * 8
-        >
-        avg(irate(ifHCOutOctets{job!="", ifName!~"lo|veth.*"}[5m] offset 7d)) by (ifName) * 8 * 3
-      )
-    for: 10m
+    for: 5m
     labels:
-      severity: 'critical'
-      alert_type: 'network_anomaly'
+      severity: warning
+      alert_type: network_anomaly
     annotations:
-      summary: "Abnormal traffic on {{ $labels.ifName }}"
-      description: "Traffic anomaly detected on interface {{ $labels.ifName }}"
+      summary: "Abnormal traffic pattern detected"
+      description: "Traffic on {{ $labels.ifName }} is 3x higher than last week + buffer."

@@ -1,0 +1,14 @@
+CREATE TABLE approvals (
+    host TEXT PRIMARY KEY,
+    backup_file TEXT NOT NULL,
+    status TEXT NOT NULL CHECK(status IN ('pending', 'approved', 'rejected')),
+    message_id TEXT NOT NULL,  # ID message Telegram
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    approved_by TEXT,  # ID user phê duyệt
+    rejected_by TEXT,  # ID user từ chối
+    reason TEXT  # Lý do từ chối (nếu có)
+);
+
+-- Thêm index để tìm kiếm nhanh
+CREATE INDEX idx_status ON approvals(status);
+CREATE INDEX idx_requested_at ON approvals(requested_at);

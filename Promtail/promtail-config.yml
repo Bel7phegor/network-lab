@@ -1,0 +1,65 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: system
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: varlogs
+          host: monitoring-server
+          __path__: /var/log/*log  
+          
+    relabel_configs:
+      - source_labels: ['__path__']
+        regex: '/var/log/(.*)'
+        target_label: 'source'
+
+  - job_name: syslog
+    syslog:
+      listen_address: 0.0.0.0:1514
+      listen_protocol: udp
+      labels:
+        job: "pfsense"      
+        __syslog_message_hostname: "hostname"
+        __syslog_message_app_name: "app"
+        __syslog_message_severity: "severity"
+        
+    relabel_configs:
+      - source_labels: ['__syslog_message_hostname']
+        target_label: 'host'
+      
+      - source_labels: ['__syslog_message_app_name']
+        target_label: 'source'
+        
+      - source_labels: ['__syslog_message_severity']
+        target_label: 'level'
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        
+    relabel_configs:
+      - target_label: 'job'
+        replacement: 'docker'
+ 
+      - target_label: 'host'
+        replacement: 'monitoring-server'
+      
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'  
+        target_label: 'source'
+        
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'log_stream'
+      
+      - source_labels: ['__meta_docker_container_id']
+        target_label: '__path__'
+        replacement: /var/lib/docker/containers/$1/*.log

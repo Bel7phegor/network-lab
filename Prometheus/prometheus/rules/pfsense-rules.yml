@@ -1,38 +1,51 @@
 groups:
+- name: pfsense.rules
+  rules:
+  - record: pfsense:memory:usage_percent
+    expr: 100 - ((memAvailReal / memTotalReal) * 100)
+
 - name: memory-usage-alerts
   rules:
   - alert: MemoryUsageNotice
-    expr: 100 - ((memAvailReal{job!=""} / memTotalReal{job!=""}) * 100) > 60 and 100 - ((memAvailReal{job!=""} / memTotalReal{job!=""}) * 100) <= 70
+    expr: pfsense:memory:usage_percent > 60 and pfsense:memory:usage_percent <= 70
     for: 10m
     labels:
-      severity: 'notice'
+      severity: notice
+      alert_type: memory
     annotations:
-      summary: "Memory usage notice ({{ $value | humanize }}%) on {{ $labels.instance }}"
-      description: "Memory usage is {{ $value | humanize }}% on {{ $labels.instance }} (Notice threshold: 60-70%)"
+      summary: "Memory Usage Notice"
+      description: "Memory usage is {{ $value | printf \"%.2f\" }}%"
+      value: "{{ $value | printf \"%.2f\" }}" 
 
   - alert: MemoryUsageWarning
-    expr: 100 - ((memAvailReal{job!=""} / memTotalReal{job!=""}) * 100) > 70 and 100 - ((memAvailReal{job!=""} / memTotalReal{job!=""}) * 100) <= 80
+    expr: pfsense:memory:usage_percent > 70 and pfsense:memory:usage_percent <= 80
     for: 5m
     labels:
-      severity: 'warning'
+      severity: warning
+      alert_type: memory
     annotations:
-      summary: "High memory usage warning ({{ $value | humanize }}%) on {{ $labels.instance }}"
-      description: "Memory usage is {{ $value | humanize }}% on {{ $labels.instance }} (Warning threshold: 71-80%)"
+      summary: "Memory Usage Warning"
+      description: "Memory usage is {{ $value | printf \"%.2f\" }}%"
+      value: "{{ $value | printf \"%.2f\" }}"
 
   - alert: MemoryUsageCritical
-    expr: 100 - ((memAvailReal{job!=""} / memTotalReal{job!=""}) * 100) > 80 and 100 - ((memAvailReal{job!=""} / memTotalReal{job!=""}) * 100) <= 90
+    expr: pfsense:memory:usage_percent > 80 and pfsense:memory:usage_percent <= 90
     for: 3m
     labels:
-      severity: 'critical'
+      severity: critical
+      alert_type: memory
     annotations:
-      summary: "Critical memory usage ({{ $value | humanize }}%) on {{ $labels.instance }}"
-      description: "Memory usage is {{ $value | humanize }}% on {{ $labels.instance }} (Critical threshold: 81-90%)"
+      summary: "Memory Usage Critical"
+      description: "Memory usage is {{ $value | printf \"%.2f\" }}%"
+      value: "{{ $value | printf \"%.2f\" }}"
 
   - alert: MemoryUsageEmergency
-    expr: 100 - ((memAvailReal{job!=""} / memTotalReal{job!=""}) * 100) > 90
+    expr: pfsense:memory:usage_percent > 90
     for: 1m
     labels:
-      severity: 'emergency'
+      severity: emergency
+      alert_type: memory
     annotations:
-      summary: "EXTREME memory usage ({{ $value | humanize }}%) on {{ $labels.instance }}"
-      description: "Memory usage is {{ $value | humanize }}% on {{ $labels.instance }} (Emergency threshold: >90%)"
+      summary: "Memory Usage EMERGENCY"
+      description: "Memory usage is {{ $value | printf \"%.2f\" }}%"
+      value: "{{ $value | printf \"%.2f\" }}"

@@ -1,27 +1,23 @@
 version: v3
 teleport:
-  nodename: teleport
+  nodename: teleport.anphuc.site
   data_dir: /var/lib/teleport
   log:
     output: stderr
     severity: INFO
-    format:
-      output: text
 
 auth_service:
-  enabled: "yes"
+  enabled: yes
+  cluster_name: teleport.anphuc.site
   listen_addr: 0.0.0.0:3025
-  cluster_name: teleport-onpre.anphuc.site
-
-ssh_service:
-  enabled: "yes"
-  labels:
-    namesv: "teleport"
 
 proxy_service:
-  enabled: "yes"
-  web_listen_addr: 0.0.0.0:443
+  enabled: yes
   public_addr: teleport.anphuc.site:443
-  https_keypairs:
-    - key_file: /etc/ssl/private/teleport-server.key
-      cert_file: /etc/ssl/certs/teleport-server.crt
+  listen_addr: 0.0.0.0:3023
+  web_listen_addr: 0.0.0.0:443
+
+ssh_service:
+  enabled: yes
+  labels:
+    env: dev

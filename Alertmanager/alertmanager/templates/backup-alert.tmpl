@@ -1,16 +1,11 @@
-{{ define "backup.alert" }}
-{{ if eq .Status "firing" }}🔴 <b>BACKUP FAILED</b> 🔴
-{{ else }}🟢 <b>BACKUP RECOVERED</b> 🟢
-{{ end }}
+{{- define "backup.alert" -}}
+🔴 <b>BACKUP FAILED</b>
 
-<b>Host:</b> {{ .Labels.host }}
+<b>Alert:</b> {{ .Labels.alertname }}
 <b>System:</b> {{ .Labels.system }}
-<b>Status:</b> {{ .Status }}
-<b>Failed at:</b> {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-
-{{ range .Annotations.SortedPairs }}
-<b>{{ .Name }}:</b> {{ .Value }}
-{{ end }}
-
-<i>Last update: {{ .Labels.testamp }}</i>
-{{ end }}
+<b>IP Address:</b> <code>{{ .Labels.host }}</code>
+<b>Error Log:</b> <pre>{{ .Annotations.description }}</pre>
+<i>Time: {{ .StartsAt.Local.Format "2006-01-02 15:04:05" }}</i>
+<b>Last Attempt:</b> {{ .Annotations.last_run }}
+<b>Severity:</b> {{ .Labels.severity | toUpper }}
+{{- end -}}

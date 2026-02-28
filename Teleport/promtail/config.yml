@@ -1,0 +1,47 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://192.168.254.254:3100/loki/api/v1/push
+
+scrape_configs:
+
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: varlogs
+          host: teleport-server
+          __path__: /var/log/*.log
+
+    relabel_configs:
+      - source_labels: ['__path__']
+        regex: '/var/log/(.*)'
+        target_label: 'source'
+
+
+  - job_name: teleport_app
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: teleport
+          host: teleport-server
+          source: teleport-service
+          __path__: /var/lib/teleport/log/*.log
+
+
+  - job_name: auto_backup
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: auto_backup
+          host: teleport-server
+          source: backup-script
+          __path__: /var/log/backups_auto/auto_backup.log

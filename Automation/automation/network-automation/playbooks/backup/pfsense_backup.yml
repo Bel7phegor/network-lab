@@ -24,7 +24,7 @@
         mode: '0755'
 
     - name: Step 3 - Fetch pfSense config.xml
-      shell: cat /cf/conf/config.xml
+      raw: cat /cf/conf/config.xml
       register: config_data
 
     - name: Step 4 - Save config to local file
@@ -40,7 +40,7 @@
         dest: "{{ paths.archive_file }}"
         format: gz
 
-    - name: ✅ Done - Show archive file location
+    - name: Done - Show archive file location
       delegate_to: localhost
       debug:
-        msg: "✅ pfSense '{{ inventory_hostname }}' đã backup xong tại {{ paths.archive_file }}"
+        msg: "pfSense '{{ inventory_hostname }}' đã backup xong tại {{ paths.archive_file }}"

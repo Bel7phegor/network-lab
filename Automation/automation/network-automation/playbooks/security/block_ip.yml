@@ -1,0 +1,15 @@
+---
+- name: Auto Block Attacker on pfSense
+  hosts: pfsense 
+  gather_facts: no
+  become: no
+  tasks:
+    - name: Add IP to Blocked Alias (EasyRule)
+      raw: "easyrule block wan {{ target_ip }}"
+      register: block_result
+
+    - name: Kill existing states from this IP
+      raw: "pfctl -k {{ target_ip }}"
+    - name: Log result
+      debug:
+        msg: "Blocked IP {{ target_ip }}. Output: {{ block_result.stdout_lines }}"

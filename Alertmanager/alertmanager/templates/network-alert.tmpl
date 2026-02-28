@@ -1,21 +1,13 @@
-{{ define "network.alert" }}
-{{ if eq .Status "firing" }}
-{{ if eq .Labels.severity "warning" }}⚠️ {{ .Labels.alertname }} ⚠️
-{{ else if eq .Labels.severity "critical" }}🚨 {{ .Labels.alertname }} 🚨
-{{ else }}🛑 {{ .Labels.alertname }} 🛑
-{{ end }}
-{{ else }}✅ {{ .Labels.alertname }} RECOVERED ✅
-{{ end }}
+{{- define "network.alert" -}}
+🔴 <b>NETWORK ALERT</b>
 
-<b>Interface:</b> {{ .Labels.ifName }} ({{ or .Labels.ifAlias "N/A" }})
-<b>Instance:</b> {{ .Labels.instance }}
-<b>Traffic:</b> {{ .Value }} bps
-<b>Approx:</b> ~{{ .Value }} bps ({{ or .Labels.traffic_mbps "N/A" }} Mbps)
-{{ range .Annotations.SortedPairs }}
-<b>{{ .Name }}:</b> {{ .Value }}
-{{ end }}
+<b>Alert:</b> {{ .Labels.alertname }}
+<b>Device Name:</b> {{ .Labels.job }}
+<b>IP Address:</b> <code>{{ .Labels.instance }}</code>
+<b>Interface:</b> {{ .Labels.ifName }} ({{ or .Labels.ifAlias "no-alias" }})
+<b>Values:</b> {{ or .Annotations.value "N/A" }} {{ if .Labels.traffic_mbps }}(Threshold: {{ .Labels.traffic_mbps }} Mbps){{ end }}
+<b>Description:</b> {{ .Annotations.description }}
+<i>Time: {{ .StartsAt.Local.Format "2006-01-02 15:04:05" }}</i>
 
-{{ if eq .Status "firing" }}<i>Triggered:</i> {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-{{ else }}<i>Resolved:</i> {{ .EndsAt.Format "2006-01-02 15:04:05" }}
-{{ end }}
-{{ end }}
+<b>Severity:</b> {{ .Labels.severity | toUpper }}
+{{- end -}}

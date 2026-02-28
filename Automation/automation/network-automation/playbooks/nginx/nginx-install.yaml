@@ -1,5 +1,5 @@
 ---
-- name: Smart Nginx installation - Install only if needed
+- name: Nginx Installation
   hosts: "{{ target_hosts }}"
   become: yes
 
@@ -7,58 +7,25 @@
     - name: Wait for unattended upgrades to complete
       shell: |
         while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
-          echo "Waiting for unattended-upgrades to complete..."
           sleep 5
         done
       changed_when: false
-      timeout: 300  # 5 minutes timeout
+      timeout: 300
 
     - name: Update package cache
       apt:
         update_cache: yes
         cache_valid_time: 3600
 
-    - name: Check if Nginx is installed
-      command: dpkg -l nginx
-      register: nginx_check
-      ignore_errors: yes
-      changed_when: false
-
-    - name: Install Nginx package (only if not installed)
+    - name: Install Nginx package
       apt:
         name: nginx
         state: present
-      register: nginx_install
-      when: nginx_check.rc != 0
 
     - name: Ensure Nginx service is running and enabled
       systemd:
         name: nginx
         state: started
         enabled: yes
-      register: nginx_service
-    
-    - name: Build summary list
-      set_fact:
-        summary_lines: |
-          {% if nginx_check.rc == 0 %}
-          [ "📊 NGINX SUMMARY for {{ ansible_hostname }}",
-            "=============================================",
-            "✅ Nginx already installed",
-            "🚀 Service status: {{ nginx_service.state }}",
-            "🌐 Access URL: http://{{ ansible_default_ipv4.address }}",
-            "📍 Hostname: {{ ansible_hostname }}" ]
-          {% else %}
-          [ "📊 NGINX SUMMARY for {{ ansible_hostname }}",
-            "=============================================",
-            "📦 Nginx newly installed: {{ nginx_install.changed }}",
-            "🚀 Service status: {{ nginx_service.state }}",
-            "🌐 Access URL: http://{{ ansible_default_ipv4.address }}",
-            "📍 Hostname: {{ ansible_hostname }}" ]
-          {% endif %}
-
-    - name: Display installation summary
-      debug:
-        msg: "{{ summary_lines }}"
 
 - import_playbook: nginx-exporter-install.yaml

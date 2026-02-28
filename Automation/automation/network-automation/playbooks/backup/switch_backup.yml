@@ -2,7 +2,7 @@
 - name: Backup config from switches (clean structure)
   hosts: switches
   gather_facts: no
-  become: false
+  become: yes 
 
   tasks:
 
@@ -56,4 +56,4 @@
     - name: Show archive file location
       delegate_to: localhost
       debug:
-        msg: "✅ Switch '{{ inventory_hostname }}' đã backup xong tại {{ archive_file }}"
+        msg: "Switch '{{ inventory_hostname }}' đã backup xong tại {{ archive_file }}"

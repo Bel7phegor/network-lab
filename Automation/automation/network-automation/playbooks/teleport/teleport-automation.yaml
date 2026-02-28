@@ -1,44 +1,76 @@
 ---
-- name: Auto join Teleport cluster for internal hosts
-  hosts: "{{ target_hosts }}" 
+- name: Generate short-lived join token from Teleport Auth Server
+  hosts: teleport-server
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: Generate Teleport Join Token (TTL = 1 hour)
+      command: tctl tokens add --type=node --ttl=1h --format=text
+      register: tctl_output
+      changed_when: false
+
+    - name: Set token fact for other plays to use
+      set_fact:
+        dynamic_join_token: "{{ tctl_output.stdout }}"
+
+    - name: Display generated token (debug)
+      debug:
+        msg: "Token mới được tạo: {{ dynamic_join_token }}"
+
+# PLAY 2: Install Teleport on Target Nodes
+- name: Install and Join Teleport
+  hosts: "{{ target_hosts }}"
   become: yes
   vars:
-    teleport_server: "teleport.anphuc.site"
-    teleport_token: "6a32d7d1baac54a9455207c8d7116f40"
+    teleport_version: "14.3.4" 
+    teleport_token: "{{ hostvars['teleport-server']['dynamic_join_token'] }}"
 
   tasks:
-    - name: Install curl (if not installed)
+    - name: Install required packages (curl, tar)
       apt:
-        name: curl
+        name: 
+          - curl
+          - tar
         state: present
         update_cache: yes
       when: ansible_os_family == "Debian"
 
-    - name: Check if Teleport is already installed
-      command: which teleport
-      register: teleport_installed
-      ignore_errors: yes
-      changed_when: false
+    - name: Check if Teleport binary exists
+      stat:
+        path: /usr/local/bin/teleport
+      register: teleport_binary
 
-    - name: Download and run Teleport install script
-      shell: |
-        curl -fsSLk "https://{{ teleport_server }}/scripts/{{ teleport_token }}/install-node.sh" | bash
-      args:
-      when: teleport_installed.rc != 0
-      register: install_result
+    - name: Download Teleport tarball
+      get_url:
+        url: "https://cdn.teleport.dev/teleport-v{{ teleport_version }}-linux-amd64-bin.tar.gz"
+        dest: /tmp/teleport.tar.gz
+        timeout: 120
+      register: download_result
+      until: download_result is succeeded
+      retries: 3    
+      delay: 5      
+      when: not teleport_binary.stat.exists
+    
+    - name: Extract Teleport tarball
+      unarchive:
+        src: /tmp/teleport.tar.gz
+        dest: /tmp/
+        remote_src: yes
+      when: not teleport_binary.stat.exists
+
+    - name: Move Teleport binary to /usr/local/bin
+      copy:
+        src: "/tmp/teleport/teleport"
+        dest: "/usr/local/bin/teleport"
+        mode: '0755'
+        remote_src: yes
+      when: not teleport_binary.stat.exists
 
     - name: Create Teleport config directory
       file:
         path: /etc/teleport
         state: directory
         mode: 0755
-
-    - name: Deploy custom Teleport configuration
-      template:
-        src: /automation/network-automation/templates/teleport.yaml.j2
-        dest: /etc/teleport.yaml
-        mode: 0644
-      notify: restart teleport
 
     - name: Ensure Teleport data directory exists
       file:
@@ -47,6 +79,13 @@
         owner: root
         group: root
         mode: 0755
+
+    - name: Deploy custom Teleport configuration
+      template:
+        src: /automation/network-automation/templates/teleport.yaml.j2
+        dest: /etc/teleport.yaml
+        mode: 0644
+      notify: restart teleport
 
     - name: Create systemd service file for Teleport
       copy:
@@ -75,6 +114,7 @@
       systemd:
         name: teleport
         enabled: yes
+        state: started
 
   handlers:
     - name: reload systemd
@@ -84,4 +124,4 @@
     - name: restart teleport
       systemd:
         name: teleport
-        state: restarted  
+        state: restarted

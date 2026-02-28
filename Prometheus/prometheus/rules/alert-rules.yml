@@ -2,13 +2,11 @@ groups:
 - name: interface-alert.rules
   rules:
   - alert: InterfaceDown
-    expr: ifOperStatus{ifDescr!~"^(lo|pf.*|pflog.*)"} == 2 
+    expr: ifOperStatus{ifDescr!~"^(lo|pf.*|pflog.*|veth.*|docker.*)"} == 2 
     for: 1m
     labels:
       severity: critical
-      alert_type: interface_status
+      alert_type: interface_status 
     annotations:
-      summary: "Interface DOWN: {{ $labels.ifDescr }} on {{ $labels.instance }}"
-      description: "Interface {{ $labels.ifDescr }} on {{ $labels.instance }} is DOWN (AdminStatus={{ $labels.ifAdminStatus }})"
-
-
+      summary: "Interface DOWN: {{ $labels.ifDescr }}"
+      description: "Interface {{ $labels.ifDescr }} on {{ $labels.instance }} is DOWN" 

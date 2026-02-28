@@ -1,16 +1,13 @@
-# Backup alert rule
 groups:
 - name: backup-status
   rules:
   - alert: BackupFailed
-    expr: auto_backup_status{job="prometheus"} == 1
+    expr: auto_backup_status{job="teleport-server"} == 1
     for: 5m
     labels:
-      severity: 'critical'
+      severity: critical
+      alert_type: backup 
     annotations:
-      summary: "Backup FAILED on {{ $labels.host }} ({{ $labels.system }})"
-      description: |-
-        Automatic backup failed!
-        Host: {{ $labels.host }}
-        System: {{ $labels.system }}
-        Last update: {{ $labels.timestamp }} 
+      summary: "Backup FAILED on {{ $labels.host }}"
+      description: "{{ $labels.error }}"
+      last_run: "{{ $labels.timestamp }}" 

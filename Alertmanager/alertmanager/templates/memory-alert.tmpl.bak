@@ -1,0 +1,22 @@
+{{ define "memory.alert" }}
+{{ if eq .Status "firing" }}
+{{ if eq .Labels.severity "notice" }}🔵 {{ .CommonLabels.severity | title }} MEMORY ALERT (60-70%) 🔵
+{{ else if eq .Labels.severity "warning" }}🟠 {{ .CommonLabels.severity | title }} MEMORY ALERT (71-80%) 🟠
+{{ else if eq .Labels.severity "critical" }}🔴 {{ .CommonLabels.severity | title }} MEMORY ALERT (81-90%) 🔴
+{{ else }}🛑 EMERGENCY MEMORY ALERT (>90%) 🛑
+{{ end }}
+{{ else }}✅ MEMORY USAGE RECOVERED ✅
+{{ end }}
+
+<b>Host:</b> {{ .Labels.instance }}
+<b>Job:</b> {{ .Labels.job }}
+<b>Usage:</b> {{ printf "%.2f" .Value }}%  <!-- Thay thế humanize bằng printf -->
+
+{{ range .Annotations.SortedPairs }}
+<b>{{ .Name }}:</b> {{ .Value }}
+{{ end }}
+
+{{ if eq .Status "firing" }}<i>Started:</i> {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+{{ else }}<i>Resolved:</i> {{ .EndsAt.Format "2006-01-02 15:04:05" }}
+{{ end }}
+{{ end }}

@@ -16,11 +16,11 @@
         enabled: no
       ignore_errors: yes
 
-    - name: Remove Teleport package (QUAN TRỌNG)
+    - name: Remove Teleport package 
       apt:
         name: teleport
         state: absent
-        purge: yes  # Xóa cả config files
+        purge: yes  
       ignore_errors: yes
 
     - name: Remove Teleport systemd unit file
@@ -75,9 +75,9 @@
         msg: >-
           {{ ansible_hostname }}:
           {% if teleport_removed.rc != 0 and teleport_package_removed.rc != 0 %}
-            ✅ Teleport completely removed
+            Teleport completely removed
           {% else %}
-            ⚠️  Teleport partially removed - check manually
+             Teleport partially removed - check manually
           {% endif %}
     - name: Deregister node from Teleport server
       delegate_to: teleport-server

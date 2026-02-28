@@ -1,0 +1,57 @@
+---
+- name: System Maintenance & Health Check
+  hosts: "{{ target_hosts }}"
+  become: yes
+  
+  tasks:
+    # ==========================================
+    - name: Update APT Cache (apt update)
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600  
+      tags: ['update']
+
+    - name: Upgrade all packages (apt dist-upgrade)
+      apt:
+        upgrade: dist 
+      tags: ['update']
+    
+    - name: Autoremove unused packages
+      apt:
+        autoremove: yes
+      tags: ['update']
+
+    - name: Clean APT cache
+      apt:
+        autoclean: yes
+      tags: ['update']
+    # ==========================================
+    - name: Get OS Version
+      command: lsb_release -ds
+      register: os_version
+      changed_when: false
+      tags: ['update', 'check']
+
+    - name: Get Kernel Version
+      command: uname -r
+      register: kernel_version
+      changed_when: false
+      tags: ['update', 'check']
+
+    - name: Check if Reboot is required
+      stat:
+        path: /var/run/reboot-required
+      register: reboot_check
+      tags: ['update', 'check']
+
+    # ==========================================
+    - name: DISPLAY SYSTEM STATUS
+      debug:
+        msg: 
+          - "========================================"
+          - "System Update Completed Successfully!"
+          - "OS Release   : {{ os_version.stdout }}"
+          - "Kernel Ver   : {{ kernel_version.stdout }}"
+          - "Reboot Need  : {{ 'YES (Please reboot manually)' if reboot_check.stat.exists else 'NO' }}"
+          - "========================================"
+      tags: ['update', 'check']

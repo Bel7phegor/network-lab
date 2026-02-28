@@ -1,0 +1,21 @@
+{{ define "interface.status.alert" }}
+{{ if eq .Status "firing" }}
+  {{ if eq .Labels.alertname "InterfaceDown" }}
+    🔴 INTERFACE DOWN 🔴
+  {{ else if eq .Labels.alertname "InterfaceUp" }}
+    🟢 INTERFACE UP 🟢
+  {{ end }}
+{{ else }}
+    ⚪ INTERFACE STATUS NORMAL ⚪
+{{ end }}
+
+<b>Device:</b> {{ .Labels.instance }}
+<b>Interface:</b> {{ .Labels.ifDescr }}
+<b>Status:</b> {{ if eq .Labels.alertname "InterfaceDown" }}DOWN{{ else }}UP{{ end }}
+
+{{ if eq .Status "firing" }}
+<i>Detected at:</i> {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+{{ else }}
+<i>Resolved at:</i> {{ .EndsAt.Format "2006-01-02 15:04:05" }}
+{{ end }}
+{{ end }}

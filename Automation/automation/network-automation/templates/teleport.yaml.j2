@@ -3,7 +3,7 @@ teleport:
   nodename: {{ ansible_hostname }}
   data_dir: /var/lib/teleport
   auth_server: teleport.anphuc.site:3025
-  auth_token: 6a32d7d1baac54a9455207c8d7116f40
+  auth_token: "{{ hostvars['teleport-server']['dynamic_join_token'] }}"
   log:
     output: stderr
     severity: INFO

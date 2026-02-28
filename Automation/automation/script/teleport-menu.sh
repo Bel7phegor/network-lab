@@ -1,54 +1,45 @@
 #!/bin/bash
-# Teleport Management Menu Script
 # Location: /automation/script/teleport-menu.sh
 
-# Path configurations
 NETWORK_AUTOMATION_DIR="/automation/network-automation"
 PLAYBOOK_DIR="$NETWORK_AUTOMATION_DIR/playbooks/teleport"
 INVENTORY_FILE="$NETWORK_AUTOMATION_DIR/inventory/hosts"
 
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+NC='\033[0m' 
 
-# Global variables for menu selection
 declare -a AVAILABLE_GROUPS
 declare -a AVAILABLE_HOSTS
 TOTAL_OPTIONS=0
 
-# Function to display header
 header() {
     clear
     echo -e "${CYAN}"
     echo "╔══════════════════════════════════════════════╗"
     echo "║          TELEPORT MANAGEMENT MENU            ║"
-    echo "║     Automation Script - $(date +%Y-%m-%d) 	       ║"
+    echo "║      Automation Script - $(date +%Y-%m-%d)         ║"
     echo "╚══════════════════════════════════════════════╝"
     echo -e "${NC}"
 }
 
-# Function to display error
 error_msg() {
-    echo -e "${RED}❌ Error: $1${NC}"
+    echo -e "${RED}Error: $1${NC}"
     sleep 2
 }
 
-# Function to display success
 success_msg() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN} OK $1${NC}"
     sleep 2
 }
 
-# Function to get available Linux hosts and groups (only internal group)
 get_available_targets() {
     echo -e "${BLUE}Available Linux targets for Agent:${NC}"
 
-    # Chỉ lấy group internal
-    local groups=$(grep -E "^\[(internal)\]" "$INVENTORY_FILE" | sed 's/\[//;s/\]//' | sort -u)
+    local groups=$(grep -E "^\[(internal|dmz)\]" "$INVENTORY_FILE" | sed 's/\[//;s/\]//' | sort -u)
 
     echo -e "${YELLOW}Groups:${NC}"
     local group_count=0
@@ -66,8 +57,7 @@ get_available_targets() {
     local host_count=$group_count
     local host_list=()
 
-    # Lấy host thuộc group internal
-    local hosts=$(awk '/\[internal\]/{f=1;next}/\[/{f=0}f' "$INVENTORY_FILE" \
+    local hosts=$(awk '/\[(internal|dmz)\]/{f=1;next} /^\[/{f=0} f' "$INVENTORY_FILE" \
                   | grep -v "^#" | grep -v "^$" | awk '{print $1}' | sort -u)
 
     while IFS= read -r host; do
@@ -88,15 +78,13 @@ get_available_targets() {
     local special_count=$((host_count+1))
     echo -e "  ${GREEN}$special_count. all${NC}         - All Linux hosts"
     special_count=$((special_count+1))
-    echo -e "  ${GREEN}$special_count. multiple${NC}    - Select multiple hosts"
+    echo -e "  ${GREEN}$special_count. multiple${NC}     - Select multiple hosts"
 
-    # Lưu array cho menu
     AVAILABLE_GROUPS=("" "${group_list[@]}")
     AVAILABLE_HOSTS=("" "${group_list[@]}" "${host_list[@]}")
     TOTAL_OPTIONS=$special_count
 }
 
-# Function to select multiple hosts
 select_multiple_hosts() {
     echo -e "${CYAN}Select multiple hosts (comma separated numbers):${NC}"
     local count=0
@@ -130,7 +118,6 @@ select_multiple_hosts() {
     fi
 }
 
-# Function to get target by number
 get_target_by_number() {
     local choice=$1
 
@@ -152,7 +139,7 @@ run_ansible_playbook() {
     local playbook=$1
     local target=$2
 
-    echo -e "${BLUE}Running: ansible-playbook -i $INVENTORY_FILE $playbook -e \"target_hosts=$target\" -e \"@secrets/secrets.yml\" --ask-vault-pass${NC}"
+    echo -e "${BLUE}Running: ansible-playbook -i $INVENTORY_FILE $playbook -e \"target_hosts=$target\" -e \"@secrets/secrets.yml\" --ask-vault-pass ${NC}"
     echo -e "${YELLOW}=========================================${NC}"
 
     cd $NETWORK_AUTOMATION_DIR
@@ -161,10 +148,10 @@ run_ansible_playbook() {
         ansible-playbook -i $INVENTORY_FILE $PLAYBOOK_DIR/$playbook \
             -e "target_hosts=$target" \
             -e "@secrets/secrets.yml" \
-            --ask-vault-pass
+            --ask-vault-pass 
     else
         ansible-playbook -i $INVENTORY_FILE $PLAYBOOK_DIR/$playbook \
-            -e "target_hosts=$target"
+            -e "target_hosts=$target" 
     fi
 
     if [ $? -eq 0 ]; then
@@ -174,13 +161,12 @@ run_ansible_playbook() {
     fi
 
     echo ""
-    read -p "👉 Press Enter to return to menu..." pause
+    read -p "Press Enter to return to menu..." pause
 }
 
-# Install Teleport
 install_teleport() {
     header
-    echo -e "${GREEN}🚀 INSTALL TELEPORT${NC}"
+    echo -e "${GREEN}INSTALL TELEPORT${NC}"
     echo -e "${YELLOW}=========================================${NC}"
     get_available_targets
     echo ""
@@ -250,10 +236,10 @@ main_menu() {
     while true; do
         header
         echo -e "${GREEN}Please select an option:${NC}"
-        echo -e "${YELLOW}1.${NC} 📦  Install Teleport"
-        echo -e "${YELLOW}2.${NC} 🗑️  Remove Teleport"
-        echo -e "${YELLOW}3.${NC} 📋  List Available Hosts"
-        echo -e "${YELLOW}4.${NC} 🚪  Exit"
+        echo -e "${YELLOW}1.${NC}Install Teleport"
+        echo -e "${YELLOW}2.${NC}Remove Teleport"
+        echo -e "${YELLOW}3.${NC}List Available Hosts"
+        echo -e "${YELLOW}4.${NC}Exit"
         echo ""
         read -p "Enter your choice (1-4): " choice
 
@@ -266,7 +252,7 @@ main_menu() {
                 read -p "Press Enter to continue..."
                 ;;
             4)
-                echo -e "${GREEN}👋 Goodbye!${NC}"
+                echo -e "${GREEN}Goodbye!${NC}"
                 exit 0
                 ;;
             *)
@@ -287,4 +273,3 @@ if [ ! -f "$PLAYBOOK_DIR/teleport-automation.yaml" ] || [ ! -f "$PLAYBOOK_DIR/te
 fi
 
 main_menu
-

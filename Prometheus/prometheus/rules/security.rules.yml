@@ -1,0 +1,14 @@
+groups:
+- name: security-rules
+  rules:
+  - alert: HighAuthFailures
+    # Logic: Nếu tốc độ lỗi tăng > 20 lần/phút
+    expr: rate(nginx_auth_failures_total[1m]) * 60 > 20
+    for: 0m
+    labels:
+      severity: critical
+      alert_type: security
+    annotations:
+      summary: "Attack detected from {{ $labels.remote_addr }}"
+      # Biến này cực quan trọng để gửi sang Ansible
+      attacker_ip: "{{ $labels.remote_addr }}"
