@@ -148,7 +148,11 @@ The monitoring system is located in the DMZ zone (`VLAN 254`), deployed using **
 ## Key Outcomes
 
 ### 1. Device Automation
-- **Automated Backup** https://github.com/Bel7phegor/network-lab/raw/main/Images/2.mp4
+- **Automated Backup** 
+<video width="320" height="240" controls loop="" muted="" autoplay="">
+    <source src="https://github.com/Bel7phegor/network-lab/raw/main/Images/2.mp4" />
+</video>
+
 
 - **Automated installation of Docker, Promtail, Node_exporter, Nginx** https://github.com/Bel7phegor/network-lab/raw/main/Images/3.mp4
 
