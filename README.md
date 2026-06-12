@@ -161,6 +161,8 @@ https://github.com/user-attachments/assets/28aa92ca-463e-4587-b667-bb97df73f466
 https://github.com/user-attachments/assets/e5118de0-9d60-44ee-a46a-f2a7632f2cc6
 
 ### 2. Comprehensive Device Monitoring
+👉[**Grafana Dashboard configuration files**](/Grafana/grafana/Dashboard/)
+
 * **PFSense Monitoring Dashboard**
 <p align="center">
   <img src="Images/pfsense-dashboard.png" alt="Sơ đồ hệ thống mạng" width="550">
