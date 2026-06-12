@@ -2,7 +2,7 @@
 
 ![Status](https://img.shields.io/badge/Status-Active-success?style=flat-square)
 ![Architecture](https://img.shields.io/badge/Architecture-3--Tier%20%7C%20Multi--Site-blue?style=flat-square)
-![Tech Stack](https://img.shields.io/badge/Tech-Ansible%20%7C%20Prometheus%20%7C%20Loki%20%7C%20Teleport-orange?style=flat-square)
+![Tech Stack](https://img.shields.io/badge/Tech-Ansible%20%7C%20Prometheus%20%7C%20Grafana%20%7C%20Alertmanager%20%7C%20Loki%20%7C%20Teleport-orange?style=flat-square)
 
 ## Overview
 
@@ -92,8 +92,8 @@ The system uses Class C IP ranges (192.168.x.x) structured as 192.168.VlanID.Hos
 ```
 
 ## Automation Workflows
-👉[**Configuration Details**](/Automation/automation/network-automation/)
-
+👉[**Ansible automation configuration files**](/Automation/automation/network-automation/) \
+👉[**Python scripts used in combination with Ansible accelerate the automation process.**](/Automation/automation/script/)
 ### 1. Auto Backup Strategy (Disaster Recovery)
 The system ensures configuration data safety through an automated backup process.
 
@@ -198,7 +198,8 @@ https://github.com/user-attachments/assets/e5118de0-9d60-44ee-a46a-f2a7632f2cc6
 
 >	Instantly displays alert status (CRITICAL/RESOLVED) to administrators when backup processes fail or network connections encounter issues.
 
-- End-of-day Results Report
+- End-of-day Results Report \
+👉[**Python scripts generate reports and send them via Telegram.**](/Automation/automation/script/reports/) 
 <p align="center">
   <img src="Images/backup-report.png" alt="Sơ đồ hệ thống mạng" width="300">
   <img src="Images/traffic-report.png" alt="Sơ đồ hệ thống mạng" width="300">
@@ -210,12 +211,8 @@ All reports are generated and sent via Telegram::
 * **Traffic report:** [Traffic_Report_20260227_2102.pdf](./Reports/Traffic_Report_20260227_2102.pdf)
 * **Network report:** [Network_Report_20260227_2103.pdf](./Reports/Report_20260227_2103.pdf)
 
-## Author
+## Contact
 
-**Nguyen An Phuc**
-| Fresher DevOps Engineer / Network Engineer |
-
-Interested in building secure, automated DevSecOps pipelines and scalable cloud systems.
-
-📧 [phucan2370@gmail.com](mailto:phucan2370@gmail.com)
-🌍 [GitHub](https://github.com/Bel7phegor) | 👉 [LinkedIn](https://www.linkedin.com/in/nguyen-an-phuc/)
+**Author:** Nguyễn An Phúc (@Bel7phegor)
+* **Profiles:** [LinkedIn: nguyen-an-phuc](https://www.linkedin.com/in/nguyen-an-phuc) | [GitHub: Bel7phegor](https://github.com/Bel7phegor) | [Portfolio: anphuc.site](https://anphuc.site)
+* **Email:** [nguyenanphuc12032002@gmail.com](mailto:nguyenanphuc12032002@gmail.com)
